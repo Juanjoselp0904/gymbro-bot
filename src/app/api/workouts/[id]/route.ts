@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 
 import { getSessionFromRequest } from "@/lib/auth";
@@ -18,9 +18,10 @@ const WorkoutUpdateSchema = z
   });
 
 export const PATCH = async (
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) => {
+  const { id } = await params;
   const session = await getSessionFromRequest(request as any);
   if (!session) {
     return NextResponse.json({ ok: false }, { status: 401 });
@@ -33,7 +34,7 @@ export const PATCH = async (
     const { error } = await supabaseAdmin
       .from("workouts")
       .update(parsed)
-      .eq("id", params.id)
+      .eq("id", id)
       .eq("user_id", session.userId);
 
     if (error) {
@@ -49,9 +50,10 @@ export const PATCH = async (
 };
 
 export const DELETE = async (
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) => {
+  const { id } = await params;
   const session = await getSessionFromRequest(request as any);
   if (!session) {
     return NextResponse.json({ ok: false }, { status: 401 });
@@ -60,7 +62,7 @@ export const DELETE = async (
   const { error } = await supabaseAdmin
     .from("workouts")
     .delete()
-    .eq("id", params.id)
+    .eq("id", id)
     .eq("user_id", session.userId);
 
   if (error) {
