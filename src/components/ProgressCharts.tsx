@@ -27,6 +27,13 @@ const formatDate = (value: string) =>
     new Date(value)
   );
 
+const formatTooltipLabel = (label: any) => {
+  if (typeof label === "string") {
+    return formatDate(label);
+  }
+  return String(label);
+};
+
 export const ProgressCharts = () => {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [loading, setLoading] = useState(true);
@@ -108,7 +115,7 @@ export const ProgressCharts = () => {
               <YAxis />
               <Tooltip
                 formatter={(value) => [`${Math.round(value as number)} kg`, "Volumen"]}
-                labelFormatter={formatDate}
+                labelFormatter={formatTooltipLabel}
               />
               <Line
                 type="monotone"
