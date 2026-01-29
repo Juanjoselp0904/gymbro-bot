@@ -54,7 +54,7 @@ export const GET = async (request: NextRequest) => {
 
   const { data: userProfile } = await supabaseAdmin
     .from("users")
-    .select("first_name")
+    .select("first_name, photo_url")
     .eq("id", session.userId)
     .maybeSingle();
 
@@ -64,6 +64,7 @@ export const GET = async (request: NextRequest) => {
     ok: true,
     data: {
       userName,
+      userPhotoUrl: userProfile?.photo_url ?? null,
       daysTrainedThisMonth: trainingDaysThisMonth.length,
       trainingDaysThisMonth,
       lastWorkoutExercises,

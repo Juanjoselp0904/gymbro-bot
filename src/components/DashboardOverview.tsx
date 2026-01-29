@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   eachDayOfInterval,
   endOfMonth,
@@ -9,6 +10,7 @@ import {
   startOfMonth,
 } from "date-fns";
 
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type LastWorkoutExercise = {
@@ -135,6 +137,22 @@ export const DashboardOverview = () => {
           Hola, {stats.userName}
         </h2>
       </div>
+
+      <Card className="border border-white/70 bg-white/85 shadow-xl backdrop-blur">
+        <CardContent className="flex flex-col gap-3 p-5 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-[#0A2540]">
+              Reta a tus amigos
+            </p>
+            <p className="text-xs text-[#6BA3BE]">
+              Compara tus maximos con otros atletas.
+            </p>
+          </div>
+          <Button asChild className="bg-[#0A2540] text-white hover:bg-[#123A5B]">
+            <Link href="/dashboard/arena">Retar a un amigo</Link>
+          </Button>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 lg:grid-cols-[1.1fr_1.9fr]">
         <Card className="border border-white/70 bg-white/80 shadow-xl backdrop-blur">
