@@ -10,16 +10,36 @@ export type WorkoutRow = {
   workout_date: string;
 };
 
+export type ExerciseOption = {
+  id: string;
+  name: string;
+  category?: string | null;
+};
+
 export const ensureUser = async (user: TelegramProfile): Promise<string> =>
   upsertTelegramUser(user);
+
+export const getExercises = async (): Promise<ExerciseOption[]> => {
+  const { data, error } = await supabaseAdmin
+    .from("exercises")
+    .select("id, name, category")
+    .order("name");
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+};
 
 export const createWorkout = async (
   userId: string,
   workout: {
-    exercise_name: string;
+    exercise_id: string;
     reps: number;
     sets: number;
     weight_kg: number;
+    workout_date?: string;
   }
 ) => {
   const { error } = await supabaseAdmin.from("workouts").insert({
@@ -35,7 +55,9 @@ export const createWorkout = async (
 export const getRecentWorkouts = async (userId: string) => {
   const { data, error } = await supabaseAdmin
     .from("workouts")
-    .select("id, exercise_name, reps, sets, weight_kg, workout_date")
+    .select(
+      "id, reps, sets, weight_kg, workout_date, exercises:exercise_id (name)"
+    )
     .eq("user_id", userId)
     .order("workout_date", { ascending: false })
     .limit(5);
@@ -44,7 +66,14 @@ export const getRecentWorkouts = async (userId: string) => {
     throw error;
   }
 
-  return data ?? [];
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    exercise_name: row.exercises?.name ?? "Desconocido",
+    reps: row.reps,
+    sets: row.sets,
+    weight_kg: row.weight_kg,
+    workout_date: row.workout_date,
+  }));
 };
 
 export const getWorkoutStats = async (userId: string) => {

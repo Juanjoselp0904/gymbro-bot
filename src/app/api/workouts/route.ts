@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { getSessionFromRequest } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 const WorkoutCreateSchema = z.object({
-  exercise_name: z.string().min(1),
+  exercise_id: z.string().uuid(),
   reps: z.number().int().positive(),
   sets: z.number().int().positive(),
   weight_kg: z.number().positive(),
@@ -13,8 +13,8 @@ const WorkoutCreateSchema = z.object({
   notes: z.string().optional(),
 });
 
-export const GET = async (request: Request) => {
-  const session = await getSessionFromRequest(request as any);
+export const GET = async (request: NextRequest) => {
+  const session = await getSessionFromRequest(request);
   if (!session) {
     return NextResponse.json({ ok: false }, { status: 401 });
   }
@@ -28,14 +28,20 @@ export const GET = async (request: Request) => {
   let query = supabaseAdmin
     .from("workouts")
     .select(
-      "id, exercise_name, reps, sets, weight_kg, notes, workout_date, created_at"
+      "id, reps, sets, weight_kg, notes, workout_date, created_at, exercises:exercise_id (id, name)"
     )
     .eq("user_id", session.userId)
     .order("workout_date", { ascending: false })
     .limit(Number.isFinite(limit) ? limit : 50);
 
   if (exercise) {
-    query = query.eq("exercise_name", exercise);
+    const isUuid =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        exercise
+      );
+    query = isUuid
+      ? query.eq("exercise_id", exercise)
+      : query.eq("exercises.name", exercise);
   }
 
   if (from) {
@@ -55,8 +61,8 @@ export const GET = async (request: Request) => {
   return NextResponse.json({ ok: true, data: data ?? [] });
 };
 
-export const POST = async (request: Request) => {
-  const session = await getSessionFromRequest(request as any);
+export const POST = async (request: NextRequest) => {
+  const session = await getSessionFromRequest(request);
   if (!session) {
     return NextResponse.json({ ok: false }, { status: 401 });
   }

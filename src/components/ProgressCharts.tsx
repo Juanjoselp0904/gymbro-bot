@@ -15,7 +15,10 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type Workout = {
-  exercise_name: string;
+  exercises?: {
+    id: string;
+    name: string;
+  } | null;
   reps: number;
   sets: number;
   weight_kg: number;
@@ -41,7 +44,9 @@ export const ProgressCharts = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const response = await fetch("/api/workouts?limit=500");
+        const response = await fetch("/api/workouts?limit=500", {
+          credentials: "include",
+        });
         if (!response.ok) {
           console.error("Failed to load workouts", response.status);
           setWorkouts([]);
@@ -82,8 +87,9 @@ export const ProgressCharts = () => {
   const volumeByExercise = useMemo(() => {
     const map = new Map<string, number>();
     workouts.forEach((workout) => {
+      const exerciseName = workout.exercises?.name ?? "Sin nombre";
       const volume = workout.sets * workout.reps * Number(workout.weight_kg);
-      map.set(workout.exercise_name, (map.get(workout.exercise_name) ?? 0) + volume);
+      map.set(exerciseName, (map.get(exerciseName) ?? 0) + volume);
     });
 
     return Array.from(map.entries())

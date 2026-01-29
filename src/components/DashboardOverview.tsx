@@ -9,7 +9,9 @@ type StatsResponse = {
   totalVolume: number;
   workoutsThisMonth: number;
   streakDays: number;
-  lastWorkout: { exercise_name: string; workout_date: string } | null;
+  lastWorkout:
+    | { exercises: { name: string } | null; workout_date: string }
+    | null;
 };
 
 export const DashboardOverview = () => {
@@ -19,7 +21,9 @@ export const DashboardOverview = () => {
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const response = await fetch("/api/stats");
+        const response = await fetch("/api/stats", {
+          credentials: "include",
+        });
         if (!response.ok) {
           console.error("Failed to load stats", response.status);
           setStats(null);
@@ -110,7 +114,7 @@ export const DashboardOverview = () => {
           </CardHeader>
           <CardContent>
             <p className="text-lg font-semibold">
-              {stats.lastWorkout?.exercise_name ?? "Sin registros"}
+              {stats.lastWorkout?.exercises?.name ?? "Sin registros"}
             </p>
             <p className="text-sm text-slate-400">{lastWorkoutDate}</p>
           </CardContent>

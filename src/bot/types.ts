@@ -1,14 +1,18 @@
 import type { Context } from "telegraf";
 
 export type WorkoutDraft = {
-  exerciseName: string;
-  sets: number;
-  reps: number;
-  weightKg: number;
+  exerciseId?: string;
+  exerciseName?: string;
+  exerciseConfidence?: "high" | "medium" | "low";
+  sets?: number;
+  reps?: number;
+  weightKg?: number;
+  workoutDate?: string;
+  pendingConfirmation?: boolean;
 };
 
 export type SessionData = {
-  workout?: Partial<WorkoutDraft>;
+  workout?: WorkoutDraft;
 };
 
 export type BotContext = Context & {

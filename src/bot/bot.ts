@@ -5,6 +5,7 @@ import type { BotContext, WorkoutDraft } from "@/bot/types";
 import {
   createWorkout,
   ensureUser,
+  getExercises,
   getRecentWorkouts,
   getWorkoutStats,
 } from "@/bot/storage";
@@ -26,13 +27,13 @@ const formatWorkoutRow = (row: {
 };
 
 const REQUIRED_FIELDS: Array<keyof WorkoutDraft> = [
-  "exerciseName",
+  "exerciseId",
   "weightKg",
   "sets",
   "reps",
 ];
 
-const getMissingFields = (draft: Partial<WorkoutDraft>) =>
+const getMissingFields = (draft: WorkoutDraft) =>
   REQUIRED_FIELDS.filter((field) => {
     const value = draft[field];
     if (typeof value === "number") {
@@ -43,13 +44,59 @@ const getMissingFields = (draft: Partial<WorkoutDraft>) =>
 
 const buildMissingPrompt = (missing: Array<keyof WorkoutDraft>) => {
   const prompts: Record<keyof WorkoutDraft, string> = {
+    exerciseId: "¿Qué ejercicio realizaste?",
     exerciseName: "¿Qué ejercicio realizaste?",
+    exerciseConfidence: "",
     weightKg: "¿Cuánto peso levantaste (en kg)?",
     sets: "¿Cuántas series hiciste?",
     reps: "¿Cuántas repeticiones por serie?",
+    workoutDate: "",
+    pendingConfirmation: "",
   };
 
-  return missing.map((field) => prompts[field]).join(" ");
+  return missing
+    .map((field) => prompts[field])
+    .filter((prompt) => prompt)
+    .join(" ");
+};
+
+const normalizeWorkoutDate = (value?: string) => {
+  if (!value) {
+    return undefined;
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return undefined;
+  }
+
+  return parsed.toISOString();
+};
+
+const registerWorkout = async (ctx: BotContext, state: WorkoutDraft) => {
+  const telegramUser = ctx.from;
+  if (!telegramUser) {
+    return ctx.reply("No pude identificar tu usuario.");
+  }
+
+  if (!state.exerciseId || !state.sets || !state.reps || !state.weightKg) {
+    ctx.session.workout = {};
+    return ctx.reply("Falta información. Usa /log de nuevo.");
+  }
+
+  const userId = await ensureUser(telegramUser);
+  await createWorkout(userId, {
+    exercise_id: state.exerciseId,
+    sets: state.sets,
+    reps: state.reps,
+    weight_kg: state.weightKg,
+    workout_date: normalizeWorkoutDate(state.workoutDate),
+  });
+
+  ctx.session.workout = {};
+  return ctx.reply(
+    `✅ Registrado:\n- Ejercicio: ${state.exerciseName}\n- Peso: ${state.weightKg} kg\n- Series: ${state.sets}\n- Repeticiones: ${state.reps}`
+  );
 };
 
 const processWorkoutMessage = async (ctx: BotContext, rawText: string) => {
@@ -61,41 +108,68 @@ const processWorkoutMessage = async (ctx: BotContext, rawText: string) => {
   ctx.session.workout = ctx.session.workout ?? {};
   const currentState = ctx.session.workout;
 
+  if (currentState.pendingConfirmation) {
+    const affirmative = ["si", "sí", "yes", "ok", "confirmar", "correcto"];
+    const normalized = text.toLowerCase();
+    if (affirmative.some((word) => normalized.includes(word))) {
+      currentState.pendingConfirmation = false;
+      currentState.exerciseConfidence = "high";
+      ctx.session.workout = currentState;
+
+      const missingFields = getMissingFields(currentState);
+      if (missingFields.length === 0) {
+        return registerWorkout(ctx, currentState);
+      }
+
+      return ctx.reply(buildMissingPrompt(missingFields));
+    }
+
+    ctx.session.workout = {};
+    return ctx.reply("Registro cancelado. Usa /log para empezar de nuevo.");
+  }
+
   try {
-    const agentResult = await runCoachAgent(text, currentState);
-    const updatedState: Partial<WorkoutDraft> = {
+    const exercises = await getExercises();
+    const agentResult = await runCoachAgent(text, currentState, exercises);
+    const updatedState: WorkoutDraft = {
       ...currentState,
-      ...(agentResult.exercise ? { exerciseName: agentResult.exercise } : {}),
+      ...(agentResult.exerciseId ? { exerciseId: agentResult.exerciseId } : {}),
+      ...(agentResult.exerciseName
+        ? { exerciseName: agentResult.exerciseName }
+        : {}),
+      ...(agentResult.exerciseConfidence
+        ? { exerciseConfidence: agentResult.exerciseConfidence }
+        : {}),
       ...(agentResult.weightKg ? { weightKg: agentResult.weightKg } : {}),
       ...(agentResult.sets ? { sets: agentResult.sets } : {}),
       ...(agentResult.reps ? { reps: agentResult.reps } : {}),
+      ...(agentResult.workoutDate
+        ? { workoutDate: agentResult.workoutDate }
+        : {}),
     };
 
     const missingFields = getMissingFields(updatedState);
     ctx.session.workout = updatedState;
+
+    if (
+      updatedState.exerciseConfidence === "low" &&
+      updatedState.exerciseName &&
+      updatedState.exerciseId &&
+      !updatedState.pendingConfirmation
+    ) {
+      updatedState.pendingConfirmation = true;
+      ctx.session.workout = updatedState;
+      return ctx.reply(
+        `¿Te refieres a "${updatedState.exerciseName}"?\n\nResponde "sí" para confirmar o /cancel para cancelar.`
+      );
+    }
 
     if (missingFields.length > 0) {
       const reply = agentResult.reply || buildMissingPrompt(missingFields);
       return ctx.reply(reply);
     }
 
-    const telegramUser = ctx.from;
-    if (!telegramUser) {
-      return ctx.reply("No pude identificar tu usuario.");
-    }
-
-    const userId = await ensureUser(telegramUser);
-    await createWorkout(userId, {
-      exercise_name: updatedState.exerciseName ?? "",
-      sets: updatedState.sets ?? 0,
-      reps: updatedState.reps ?? 0,
-      weight_kg: updatedState.weightKg ?? 0,
-    });
-
-    ctx.session.workout = {};
-    return ctx.reply(
-      `✅ Registrado:\n- Ejercicio: ${updatedState.exerciseName}\n- Peso: ${updatedState.weightKg} kg\n- Series: ${updatedState.sets}\n- Repeticiones: ${updatedState.reps}`
-    );
+    return registerWorkout(ctx, updatedState);
   } catch (error) {
     console.error("Gym coach error", error);
     return ctx.reply(

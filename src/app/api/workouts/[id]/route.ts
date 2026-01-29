@@ -6,7 +6,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 
 const WorkoutUpdateSchema = z
   .object({
-    exercise_name: z.string().min(1).optional(),
+    exercise_id: z.string().uuid().optional(),
     reps: z.number().int().positive().optional(),
     sets: z.number().int().positive().optional(),
     weight_kg: z.number().positive().optional(),
@@ -22,7 +22,7 @@ export const PATCH = async (
   { params }: { params: Promise<{ id: string }> }
 ) => {
   const { id } = await params;
-  const session = await getSessionFromRequest(request as any);
+  const session = await getSessionFromRequest(request);
   if (!session) {
     return NextResponse.json({ ok: false }, { status: 401 });
   }
@@ -54,7 +54,7 @@ export const DELETE = async (
   { params }: { params: Promise<{ id: string }> }
 ) => {
   const { id } = await params;
-  const session = await getSessionFromRequest(request as any);
+  const session = await getSessionFromRequest(request);
   if (!session) {
     return NextResponse.json({ ok: false }, { status: 401 });
   }

@@ -1,18 +1,20 @@
 import { startOfDay, startOfMonth, subDays } from "date-fns";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import { getSessionFromRequest } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
-export const GET = async (request: Request) => {
-  const session = await getSessionFromRequest(request as any);
+export const GET = async (request: NextRequest) => {
+  console.log("Cookies:", request.cookies.getAll());
+  const session = await getSessionFromRequest(request);
+  console.log("Session:", session);
   if (!session) {
     return NextResponse.json({ ok: false }, { status: 401 });
   }
 
   const { data, error } = await supabaseAdmin
     .from("workouts")
-    .select("exercise_name, workout_date, sets, reps, weight_kg")
+    .select("workout_date, sets, reps, weight_kg, exercises:exercise_id (name)")
     .eq("user_id", session.userId)
     .order("workout_date", { ascending: false });
 
@@ -30,7 +32,7 @@ export const GET = async (request: Request) => {
 
   const lastWorkout = workouts[0]
     ? {
-        exercise_name: workouts[0].exercise_name,
+        exercises: workouts[0].exercises ?? null,
         workout_date: workouts[0].workout_date,
       }
     : null;

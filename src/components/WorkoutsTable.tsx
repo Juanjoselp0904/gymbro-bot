@@ -13,10 +13,20 @@ import {
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type Workout = {
   id: string;
-  exercise_name: string;
+  exercises?: {
+    id: string;
+    name: string;
+  } | null;
   reps: number;
   sets: number;
   weight_kg: number;
@@ -24,13 +34,20 @@ type Workout = {
   workout_date: string;
 };
 
+type ExerciseOption = {
+  id: string;
+  name: string;
+  category?: string | null;
+};
+
 export const WorkoutsTable = () => {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
+  const [exercises, setExercises] = useState<ExerciseOption[]>([]);
   const [filter, setFilter] = useState("");
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Workout | null>(null);
   const [form, setForm] = useState({
-    exercise_name: "",
+    exercise_id: "",
     sets: "",
     reps: "",
     weight_kg: "",
@@ -40,36 +57,65 @@ export const WorkoutsTable = () => {
 
   useEffect(() => {
     const loadWorkouts = async () => {
+      const response = await fetch("/api/workouts?limit=200", {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        console.error("Failed to load workouts", response.status);
+        return [];
+      }
+
+      const text = await response.text();
+      if (!text) {
+        return [];
+      }
+
+      const json = JSON.parse(text);
+      return json.data ?? [];
+    };
+
+    const loadExercises = async () => {
+      const response = await fetch("/api/exercises", {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        console.error("Failed to load exercises", response.status);
+        return [];
+      }
+
+      const text = await response.text();
+      if (!text) {
+        return [];
+      }
+
+      const json = JSON.parse(text);
+      return json.data ?? [];
+    };
+
+    const loadData = async () => {
       try {
-        const response = await fetch("/api/workouts?limit=200");
-        if (!response.ok) {
-          console.error("Failed to load workouts", response.status);
-          setWorkouts([]);
-          return;
-        }
-
-        const text = await response.text();
-        if (!text) {
-          setWorkouts([]);
-          return;
-        }
-
-        const json = JSON.parse(text);
-        setWorkouts(json.data ?? []);
+        const [workoutsData, exercisesData] = await Promise.all([
+          loadWorkouts(),
+          loadExercises(),
+        ]);
+        setWorkouts(workoutsData);
+        setExercises(exercisesData);
       } catch (error) {
-        console.error("Failed to load workouts", error);
+        console.error("Failed to load workouts data", error);
+        setWorkouts([]);
+        setExercises([]);
       } finally {
         setLoading(false);
       }
     };
 
-    loadWorkouts();
+    loadData();
   }, []);
 
   const openEditor = (workout: Workout) => {
     setEditing(workout);
     setForm({
-      exercise_name: workout.exercise_name,
+      exercise_id: workout.exercises?.id ?? "",
       sets: String(workout.sets),
       reps: String(workout.reps),
       weight_kg: String(workout.weight_kg),
@@ -84,7 +130,7 @@ export const WorkoutsTable = () => {
     }
 
     const payload = {
-      exercise_name: form.exercise_name.trim(),
+      exercise_id: form.exercise_id || undefined,
       sets: Number(form.sets),
       reps: Number(form.reps),
       weight_kg: Number(form.weight_kg),
@@ -98,6 +144,7 @@ export const WorkoutsTable = () => {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
+      credentials: "include",
     });
 
     if (!response.ok) {
@@ -110,7 +157,10 @@ export const WorkoutsTable = () => {
         item.id === editing.id
           ? {
               ...item,
-              exercise_name: payload.exercise_name,
+              exercises: payload.exercise_id
+                ? exercises.find((exercise) => exercise.id === payload.exercise_id) ??
+                  item.exercises
+                : item.exercises,
               sets: payload.sets,
               reps: payload.reps,
               weight_kg: payload.weight_kg,
@@ -128,7 +178,10 @@ export const WorkoutsTable = () => {
       return;
     }
 
-    const response = await fetch(`/api/workouts/${id}`, { method: "DELETE" });
+    const response = await fetch(`/api/workouts/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
     if (!response.ok) {
       console.error("Failed to delete workout");
       return;
@@ -143,7 +196,7 @@ export const WorkoutsTable = () => {
     }
     const lower = filter.toLowerCase();
     return workouts.filter((workout) =>
-      workout.exercise_name.toLowerCase().includes(lower)
+      (workout.exercises?.name ?? "sin nombre").toLowerCase().includes(lower)
     );
   }, [filter, workouts]);
 
@@ -183,7 +236,7 @@ export const WorkoutsTable = () => {
               filtered.map((workout) => (
                 <TableRow key={workout.id}>
                   <TableCell className="font-medium">
-                    {workout.exercise_name}
+                    {workout.exercises?.name ?? "Sin nombre"}
                   </TableCell>
                   <TableCell>{workout.sets}</TableCell>
                   <TableCell>{workout.reps}</TableCell>
@@ -224,16 +277,26 @@ export const WorkoutsTable = () => {
             <DialogTitle>Editar entrenamiento</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4">
-            <Input
-              value={form.exercise_name}
-              onChange={(event) =>
+            <Select
+              value={form.exercise_id}
+              onValueChange={(value) =>
                 setForm((prev) => ({
                   ...prev,
-                  exercise_name: event.target.value,
+                  exercise_id: value,
                 }))
               }
-              placeholder="Ejercicio"
-            />
+            >
+              <SelectTrigger className="w-full bg-slate-900 text-white">
+                <SelectValue placeholder="Selecciona un ejercicio" />
+              </SelectTrigger>
+              <SelectContent className="bg-slate-900 text-white">
+                {exercises.map((exercise) => (
+                  <SelectItem key={exercise.id} value={exercise.id}>
+                    {exercise.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <div className="grid gap-3 md:grid-cols-3">
               <Input
                 type="number"
