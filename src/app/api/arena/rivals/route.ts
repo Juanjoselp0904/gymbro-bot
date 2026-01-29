@@ -7,7 +7,7 @@ const CORE_EXERCISES = ["Press banca", "Sentadilla", "Peso muerto"];
 
 type MaxLiftRow = {
   weight_kg: number;
-  exercises?: { name?: string | null } | null;
+  exercises?: { name?: string | null }[] | null;
 };
 
 const buildEmptyMaxes = () =>
@@ -29,7 +29,7 @@ const getUserMaxLifts = async (userId: string, exerciseIds: string[]) => {
 
   const maxes = buildEmptyMaxes();
   (data ?? []).forEach((row: MaxLiftRow) => {
-    const name = row.exercises?.name ?? null;
+    const name = row.exercises?.[0]?.name ?? null;
     if (!name || !(name in maxes)) {
       return;
     }
