@@ -201,7 +201,7 @@ export const WorkoutsTable = () => {
   }, [filter, workouts]);
 
   if (loading) {
-    return <p className="text-slate-400">Cargando entrenamientos...</p>;
+    return <p className="text-[#2B6B8A]">Cargando entrenamientos...</p>;
   }
 
   return (
@@ -210,37 +210,46 @@ export const WorkoutsTable = () => {
         placeholder="Filtra por ejercicio..."
         value={filter}
         onChange={(event) => setFilter(event.target.value)}
-        className="max-w-sm bg-slate-900 text-white"
+        className="max-w-sm border-[#D4E8F2] bg-white/80 text-[#0A2540] shadow-sm focus-visible:ring-[#6BA3BE]"
       />
 
-      <div className="rounded-xl border border-slate-800">
+      <div className="overflow-hidden rounded-2xl border border-white/70 bg-white/80 shadow-xl">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Ejercicio</TableHead>
-              <TableHead>Series</TableHead>
-              <TableHead>Reps</TableHead>
-              <TableHead>Peso</TableHead>
-              <TableHead>Fecha</TableHead>
-              <TableHead>Acciones</TableHead>
+            <TableRow className="bg-[#F2F8FB]">
+              <TableHead className="text-[#2B6B8A]">Ejercicio</TableHead>
+              <TableHead className="text-[#2B6B8A]">Series</TableHead>
+              <TableHead className="text-[#2B6B8A]">Reps</TableHead>
+              <TableHead className="text-[#2B6B8A]">Peso</TableHead>
+              <TableHead className="text-[#2B6B8A]">Fecha</TableHead>
+              <TableHead className="text-[#2B6B8A]">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-slate-400">
+                <TableCell colSpan={6} className="text-center text-[#2B6B8A]">
                   No hay entrenamientos registrados.
                 </TableCell>
               </TableRow>
             ) : (
               filtered.map((workout) => (
-                <TableRow key={workout.id}>
-                  <TableCell className="font-medium">
+                <TableRow
+                  key={workout.id}
+                  className="transition-colors even:bg-[#F9FCFE] hover:bg-[#E8F2F7]"
+                >
+                  <TableCell className="font-semibold text-[#0A2540]">
                     {workout.exercises?.name ?? "Sin nombre"}
                   </TableCell>
-                  <TableCell>{workout.sets}</TableCell>
-                  <TableCell>{workout.reps}</TableCell>
-                  <TableCell>{workout.weight_kg} kg</TableCell>
+                  <TableCell className="text-[#2B6B8A]">
+                    {workout.sets}
+                  </TableCell>
+                  <TableCell className="text-[#2B6B8A]">
+                    {workout.reps}
+                  </TableCell>
+                  <TableCell className="text-[#2B6B8A]">
+                    {workout.weight_kg} kg
+                  </TableCell>
                   <TableCell>
                     {new Intl.DateTimeFormat("es-ES", {
                       dateStyle: "medium",
@@ -252,6 +261,7 @@ export const WorkoutsTable = () => {
                         variant="secondary"
                         size="sm"
                         onClick={() => openEditor(workout)}
+                        className="rounded-xl bg-[#D4E8F2] text-[#0A2540] hover:bg-[#6BA3BE] hover:text-white"
                       >
                         Editar
                       </Button>
@@ -259,6 +269,7 @@ export const WorkoutsTable = () => {
                         variant="destructive"
                         size="sm"
                         onClick={() => deleteWorkout(workout.id)}
+                        className="rounded-xl bg-[#0A2540] text-white hover:bg-[#2B6B8A]"
                       >
                         Eliminar
                       </Button>
@@ -272,7 +283,7 @@ export const WorkoutsTable = () => {
       </div>
 
       <Dialog open={!!editing} onOpenChange={() => setEditing(null)}>
-        <DialogContent className="bg-slate-950 text-white">
+        <DialogContent className="border border-white/70 bg-white/95 text-[#0A2540] shadow-2xl">
           <DialogHeader>
             <DialogTitle>Editar entrenamiento</DialogTitle>
           </DialogHeader>
@@ -286,10 +297,10 @@ export const WorkoutsTable = () => {
                 }))
               }
             >
-              <SelectTrigger className="w-full bg-slate-900 text-white">
+              <SelectTrigger className="w-full border-[#D4E8F2] bg-white text-[#0A2540]">
                 <SelectValue placeholder="Selecciona un ejercicio" />
               </SelectTrigger>
-              <SelectContent className="bg-slate-900 text-white">
+              <SelectContent className="border-[#D4E8F2] bg-white text-[#0A2540]">
                 {exercises.map((exercise) => (
                   <SelectItem key={exercise.id} value={exercise.id}>
                     {exercise.name}
@@ -305,6 +316,7 @@ export const WorkoutsTable = () => {
                   setForm((prev) => ({ ...prev, sets: event.target.value }))
                 }
                 placeholder="Series"
+                className="border-[#D4E8F2] bg-white text-[#0A2540] focus-visible:ring-[#6BA3BE]"
               />
               <Input
                 type="number"
@@ -313,6 +325,7 @@ export const WorkoutsTable = () => {
                   setForm((prev) => ({ ...prev, reps: event.target.value }))
                 }
                 placeholder="Reps"
+                className="border-[#D4E8F2] bg-white text-[#0A2540] focus-visible:ring-[#6BA3BE]"
               />
               <Input
                 type="number"
@@ -324,6 +337,7 @@ export const WorkoutsTable = () => {
                   }))
                 }
                 placeholder="Peso (kg)"
+                className="border-[#D4E8F2] bg-white text-[#0A2540] focus-visible:ring-[#6BA3BE]"
               />
             </div>
             <Input
@@ -335,6 +349,7 @@ export const WorkoutsTable = () => {
                   workout_date: event.target.value,
                 }))
               }
+              className="border-[#D4E8F2] bg-white text-[#0A2540] focus-visible:ring-[#6BA3BE]"
             />
             <Input
               value={form.notes}
@@ -342,13 +357,23 @@ export const WorkoutsTable = () => {
                 setForm((prev) => ({ ...prev, notes: event.target.value }))
               }
               placeholder="Notas"
+              className="border-[#D4E8F2] bg-white text-[#0A2540] focus-visible:ring-[#6BA3BE]"
             />
           </div>
           <DialogFooter>
-            <Button variant="secondary" onClick={() => setEditing(null)}>
+            <Button
+              variant="secondary"
+              onClick={() => setEditing(null)}
+              className="rounded-xl bg-[#D4E8F2] text-[#0A2540] hover:bg-[#6BA3BE] hover:text-white"
+            >
               Cancelar
             </Button>
-            <Button onClick={saveChanges}>Guardar</Button>
+            <Button
+              onClick={saveChanges}
+              className="rounded-xl bg-[#2B6B8A] text-white hover:bg-[#0A2540]"
+            >
+              Guardar
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

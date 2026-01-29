@@ -1,18 +1,16 @@
-import { startOfDay, startOfMonth, subDays } from "date-fns";
+import { startOfDay, startOfMonth } from "date-fns";
 import { NextRequest, NextResponse } from "next/server";
 
 import { getSessionFromRequest } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export const GET = async (request: NextRequest) => {
-  console.log("Cookies:", request.cookies.getAll());
   const session = await getSessionFromRequest(request);
-  console.log("Session:", session);
   if (!session) {
     return NextResponse.json({ ok: false }, { status: 401 });
   }
 
-  const { data, error } = await supabaseAdmin
+  const { data: workouts, error } = await supabaseAdmin
     .from("workouts")
     .select("workout_date, sets, reps, weight_kg, exercises:exercise_id (name)")
     .eq("user_id", session.userId)
@@ -23,46 +21,53 @@ export const GET = async (request: NextRequest) => {
     return NextResponse.json({ ok: false }, { status: 500 });
   }
 
-  const workouts = data ?? [];
-  const totalWorkouts = workouts.length;
-  const totalVolume = workouts.reduce(
-    (sum, row) => sum + row.sets * row.reps * Number(row.weight_kg),
-    0
-  );
-
-  const lastWorkout = workouts[0]
-    ? {
-        exercises: workouts[0].exercises ?? null,
-        workout_date: workouts[0].workout_date,
-      }
+  const safeWorkouts = workouts ?? [];
+  const lastWorkoutDate = safeWorkouts[0]?.workout_date ?? null;
+  const lastWorkoutDayKey = lastWorkoutDate
+    ? startOfDay(new Date(lastWorkoutDate)).toISOString().slice(0, 10)
     : null;
+  const lastWorkoutExercises = lastWorkoutDayKey
+    ? safeWorkouts
+        .filter(
+          (row) =>
+            startOfDay(new Date(row.workout_date)).toISOString().slice(0, 10) ===
+            lastWorkoutDayKey
+        )
+        .map((row) => ({
+          exerciseName: row.exercises?.name ?? "Sin nombre",
+          sets: row.sets,
+          reps: row.reps,
+          weightKg: Number(row.weight_kg),
+        }))
+    : [];
 
   const monthStart = startOfMonth(new Date());
-  const workoutsThisMonth = workouts.filter(
-    (row) => new Date(row.workout_date) >= monthStart
-  ).length;
-
-  const workoutDays = new Set(
-    workouts.map((row) =>
-      startOfDay(new Date(row.workout_date)).toISOString()
+  const trainingDaysThisMonth = Array.from(
+    new Set(
+      safeWorkouts
+        .filter((row) => new Date(row.workout_date) >= monthStart)
+        .map((row) =>
+          startOfDay(new Date(row.workout_date)).toISOString().slice(0, 10)
+        )
     )
-  );
+  ).sort();
 
-  let streakDays = 0;
-  let cursor = startOfDay(new Date());
-  while (workoutDays.has(cursor.toISOString())) {
-    streakDays += 1;
-    cursor = startOfDay(subDays(cursor, 1));
-  }
+  const { data: userProfile } = await supabaseAdmin
+    .from("users")
+    .select("first_name")
+    .eq("id", session.userId)
+    .maybeSingle();
+
+  const userName = userProfile?.first_name ?? session.username ?? "amigo";
 
   return NextResponse.json({
     ok: true,
     data: {
-      totalWorkouts,
-      totalVolume,
-      workoutsThisMonth,
-      streakDays,
-      lastWorkout,
+      userName,
+      daysTrainedThisMonth: trainingDaysThisMonth.length,
+      trainingDaysThisMonth,
+      lastWorkoutExercises,
+      lastWorkoutDate,
     },
   });
 };

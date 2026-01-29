@@ -142,11 +142,11 @@ export const ExercisesSummary = () => {
   }, [workouts]);
 
   if (loading) {
-    return <p className="text-slate-400">Cargando ejercicios...</p>;
+    return <p className="text-[#2B6B8A]">Cargando ejercicios...</p>;
   }
 
   if (exercises.length === 0) {
-    return <p className="text-slate-400">No hay ejercicios registrados.</p>;
+    return <p className="text-[#2B6B8A]">No hay ejercicios registrados.</p>;
   }
 
   return (
@@ -154,11 +154,13 @@ export const ExercisesSummary = () => {
       {exercises.map((exercise) => (
         <Card
           key={exercise.exercise}
-          className="border-slate-800 bg-slate-900 text-white"
+          className="border border-white/70 bg-white/85 text-[#0A2540] shadow-xl transition-all hover:-translate-y-1 hover:shadow-2xl"
         >
           <CardHeader className="gap-1">
-            <CardTitle className="text-base">{exercise.exercise}</CardTitle>
-            <CardDescription className="text-slate-400">
+            <CardTitle className="text-base text-[#0A2540]">
+              {exercise.exercise}
+            </CardTitle>
+            <CardDescription className="text-[#2B6B8A]">
               Mejor: {formatWeight(exercise.bestWeight)} kg · Última:{" "}
               {formatShortDate(exercise.lastDate)}
             </CardDescription>
@@ -166,21 +168,34 @@ export const ExercisesSummary = () => {
           <CardContent className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={exercise.data}>
-                <XAxis dataKey="date" tickFormatter={formatShortDate} />
-                <YAxis tickFormatter={(value) => `${formatWeight(value)} kg`} />
+                <XAxis
+                  dataKey="date"
+                  tickFormatter={formatShortDate}
+                  stroke="#6BA3BE"
+                />
+                <YAxis
+                  tickFormatter={(value) => `${formatWeight(value)} kg`}
+                  stroke="#6BA3BE"
+                />
                 <Tooltip
                   formatter={(value) => [
                     `${formatWeight(Number(value))} kg`,
                     "Peso",
                   ]}
                   labelFormatter={formatTooltipLabel}
+                  contentStyle={{
+                    borderRadius: "12px",
+                    borderColor: "#D4E8F2",
+                    background: "#FFFFFF",
+                    color: "#0A2540",
+                  }}
                 />
                 <Line
                   type="monotone"
                   dataKey="weight"
-                  stroke="#38bdf8"
+                  stroke="#2B6B8A"
                   strokeWidth={2}
-                  dot={{ r: 3 }}
+                  dot={{ r: 3, fill: "#6BA3BE" }}
                 />
               </LineChart>
             </ResponsiveContainer>
