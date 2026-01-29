@@ -68,7 +68,7 @@ export const getRecentWorkouts = async (userId: string) => {
 
   return (data ?? []).map((row) => ({
     id: row.id,
-    exercise_name: row.exercises?.name ?? "Desconocido",
+    exercise_name: (row.exercises as unknown as { name: string } | null)?.name ?? "Desconocido",
     reps: row.reps,
     sets: row.sets,
     weight_kg: row.weight_kg,
