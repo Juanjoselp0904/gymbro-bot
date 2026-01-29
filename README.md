@@ -3,6 +3,7 @@ visualizarlos en un dashboard con gráficas e indicadores.
 
 ## Requisitos
 
+
 - Node.js 18+
 - Cuenta de Supabase
 - Bot de Telegram creado en @BotFather
