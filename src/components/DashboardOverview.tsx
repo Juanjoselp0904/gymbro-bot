@@ -35,9 +35,16 @@ const CalendarGrid = ({ trainingDays }: { trainingDays: string[] }) => {
   const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
   const trainingSet = useMemo(() => new Set(trainingDays), [trainingDays]);
   const firstDayOffset = (getDay(monthStart) + 6) % 7;
+  const monthLabel = new Intl.DateTimeFormat("es-ES", {
+    month: "long",
+    year: "numeric",
+  }).format(monthStart);
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
+      <div className="text-sm font-semibold capitalize text-[#0A2540]">
+        {monthLabel}
+      </div>
       <div className="grid grid-cols-7 gap-1 text-center text-xs text-[#2B6B8A]">
         {weekdayLabels.map((label) => (
           <span key={label}>{label}</span>
@@ -45,7 +52,7 @@ const CalendarGrid = ({ trainingDays }: { trainingDays: string[] }) => {
       </div>
       <div className="grid grid-cols-7 gap-1">
         {Array.from({ length: firstDayOffset }).map((_, index) => (
-          <span key={`pad-${index}`} className="h-4 w-4" />
+          <span key={`pad-${index}`} className="h-6 w-6" />
         ))}
         {days.map((day) => {
           const key = format(day, "yyyy-MM-dd");
@@ -55,11 +62,14 @@ const CalendarGrid = ({ trainingDays }: { trainingDays: string[] }) => {
               key={key}
               title={format(day, "d MMM")}
               className={[
-                "h-4 w-4 rounded-md transition ring-offset-2",
+                "flex h-6 w-6 items-center justify-center rounded-md text-[10px] font-semibold transition ring-offset-2",
                 trained ? "bg-[#2B6B8A]" : "bg-[#D4E8F2]",
+                trained ? "text-white" : "text-[#2B6B8A]",
                 "hover:ring-2 hover:ring-[#6BA3BE]",
               ].join(" ")}
-            />
+            >
+              {format(day, "d")}
+            </span>
           );
         })}
       </div>
