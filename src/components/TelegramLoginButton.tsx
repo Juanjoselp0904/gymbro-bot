@@ -19,7 +19,11 @@ declare global {
   }
 }
 
-export const TelegramLoginButton = () => {
+type TelegramLoginButtonProps = {
+  redirectTo?: string;
+};
+
+export const TelegramLoginButton = ({ redirectTo }: TelegramLoginButtonProps) => {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +49,7 @@ export const TelegramLoginButton = () => {
           return;
         }
 
-        router.push("/dashboard");
+        router.push(redirectTo ?? "/dashboard");
       } catch (err) {
         console.error("Telegram login error", err);
         setError("No se pudo iniciar sesión.");

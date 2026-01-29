@@ -34,7 +34,7 @@ export const GET = async (request: NextRequest) => {
             lastWorkoutDayKey
         )
         .map((row) => ({
-          exerciseName: row.exercises?.name ?? "Sin nombre",
+          exerciseName: (row.exercises as { name: string } | null)?.name ?? "Sin nombre",
           sets: row.sets,
           reps: row.reps,
           weightKg: Number(row.weight_kg),
