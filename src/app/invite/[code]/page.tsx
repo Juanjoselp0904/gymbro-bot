@@ -27,7 +27,34 @@ export default function InvitePage({ params }: InvitePageProps) {
   useEffect(() => {
     const acceptInvite = async () => {
       try {
+        // 1) Validate invite without requiring auth
+        const validation = await fetch(`/api/arena/invite/${params.code}`, {
+          credentials: "include",
+        });
+
+        if (validation.status === 404) {
+          setState("not-found");
+          return;
+        }
+
+        if (validation.status === 409) {
+          setState("used");
+          return;
+        }
+
+        if (validation.status === 410) {
+          setState("expired");
+          return;
+        }
+
+        if (!validation.ok) {
+          setState("error");
+          return;
+        }
+
+        // 2) Accept invite (requires auth)
         const response = await fetch(`/api/arena/invite/${params.code}`, {
+          method: "POST",
           credentials: "include",
         });
 

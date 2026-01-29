@@ -13,7 +13,7 @@ const createInviteCode = () =>
   randomBytes(INVITE_CODE_BYTES).toString("base64url");
 
 const buildInviteUrl = (code: string) =>
-  `${env.NEXT_PUBLIC_APP_URL}/invite/${code}`;
+  `${env.APP_URL}/invite/${code}`;
 
 export const POST = async (request: NextRequest) => {
   const session = await getSessionFromRequest(request);

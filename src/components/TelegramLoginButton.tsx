@@ -27,11 +27,10 @@ export const TelegramLoginButton = ({ redirectTo }: TelegramLoginButtonProps) =>
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME;
 
   useEffect(() => {
-    const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME;
     if (!botUsername) {
-      setError("Falta configurar el bot de Telegram.");
       return;
     }
 
@@ -75,7 +74,11 @@ export const TelegramLoginButton = ({ redirectTo }: TelegramLoginButtonProps) =>
       window.onTelegramAuth = undefined;
       script.remove();
     };
-  }, [router]);
+  }, [router, redirectTo, botUsername]);
+
+  if (!botUsername) {
+    return <p className="text-sm text-red-600">Falta configurar el bot de Telegram.</p>;
+  }
 
   if (error) {
     return <p className="text-sm text-red-600">{error}</p>;

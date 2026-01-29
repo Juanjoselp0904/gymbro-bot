@@ -14,7 +14,53 @@ const isExpired = (expiresAt: string | null) => {
   return new Date(expiresAt).getTime() < Date.now();
 };
 
+const loadInvite = async (code: string) => {
+  const { data: invite, error } = await supabaseAdmin
+    .from("invite_codes")
+    .select("id, user_id, expires_at, used_by")
+    .eq("code", code)
+    .maybeSingle();
+
+  return { invite, error };
+};
+
 export const GET = async (
+  _request: NextRequest,
+  context: { params: Promise<Params> }
+) => {
+  const { code } = await context.params;
+  if (!code) {
+    return NextResponse.json({ ok: false }, { status: 400 });
+  }
+
+  const { invite, error } = await loadInvite(code);
+
+  if (error) {
+    console.error("Failed to load invite code", error);
+    return NextResponse.json({ ok: false }, { status: 500 });
+  }
+
+  if (!invite) {
+    return NextResponse.json({ ok: false }, { status: 404 });
+  }
+
+  if (invite.used_by) {
+    return NextResponse.json({ ok: false, reason: "used" }, { status: 409 });
+  }
+
+  if (isExpired(invite.expires_at)) {
+    return NextResponse.json({ ok: false, reason: "expired" }, { status: 410 });
+  }
+
+  return NextResponse.json({
+    ok: true,
+    data: {
+      expiresAt: invite.expires_at,
+    },
+  });
+};
+
+export const POST = async (
   request: NextRequest,
   context: { params: Promise<Params> }
 ) => {
@@ -28,12 +74,7 @@ export const GET = async (
     return NextResponse.json({ ok: false }, { status: 400 });
   }
 
-  const { data: invite, error } = await supabaseAdmin
-    .from("invite_codes")
-    .select("id, user_id, expires_at, used_by")
-    .eq("code", code)
-    .maybeSingle();
-
+  const { invite, error } = await loadInvite(code);
   if (error) {
     console.error("Failed to load invite code", error);
     return NextResponse.json({ ok: false }, { status: 500 });

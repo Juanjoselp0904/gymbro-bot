@@ -248,7 +248,7 @@ const buildBot = () => {
   });
 
   bot.command("dashboard", async (ctx) => {
-    const dashboardUrl = `${env.NEXT_PUBLIC_APP_URL}/dashboard`;
+    const dashboardUrl = `${env.APP_URL}/dashboard`;
     return ctx.reply(`Abre tu dashboard aquí: ${dashboardUrl}`);
   });
 
