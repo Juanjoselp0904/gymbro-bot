@@ -113,7 +113,7 @@ export const ExercisesSummary = () => {
           bestWeight: weightValue,
           lastDate: workout.workout_date,
           pointsByDate: new Map<string, number>(),
-        } as const);
+        });
 
       existing.bestWeight = Math.max(existing.bestWeight, weightValue);
       existing.lastDate =
